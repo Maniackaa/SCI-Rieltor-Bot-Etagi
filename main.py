@@ -18,13 +18,15 @@ logger = logging.getLogger('bot_logger')
 err_log = logging.getLogger('errors_logger')
 
 
-async def job(bot):
+async def csi_job(bot):
+    # Запрос анкетирования CSI
     users_to_send = find_users_to_send()
     logger.debug(f'Сегодня найдены пользовтаели для рассылки CSI:\n{users_to_send}')
     await send_csi_to_users(bot, users_to_send)
 
 
 async def send_report(bot):
+    # Рассылка статистики каждый вторник
     users_to_send_report = find_users_to_send_report()
     logger.debug(f'Сегодня найдены пользовтаели для рассылки CSI:\n{users_to_send_report}')
     await send_report_to_users(users_to_send_report, bot)
@@ -32,8 +34,8 @@ async def send_report(bot):
 
 async def shedulers(bot):
     # aioschedule.every(5).minutes.do(job, bot)
-    time_start = '13:00'
-    aioschedule.every().day.at(time_start).do(job, bot)
+    time_start = '9:00'
+    aioschedule.every().day.at(time_start).do(csi_job, bot)
     aioschedule.every().tuesday.at('11:00').do(send_report, bot)
     # aioschedule.every().minute.do(send_report, bot)
     while True:

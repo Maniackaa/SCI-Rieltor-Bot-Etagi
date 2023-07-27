@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+credentials.json
 logs/*.log
 logs/*.log.*
 archive/

@@ -1,6 +1,6 @@
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup,\
     InlineKeyboardMarkup, InlineKeyboardButton
-from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 
 from database.db import Session, Menu
 
@@ -25,6 +25,7 @@ contact_kb: ReplyKeyboardMarkup = ReplyKeyboardMarkup(
     keyboard=contact_kb_buttons,
     resize_keyboard=True)
 
+
 def start_menu_kb(width: int, parent_id) -> InlineKeyboardMarkup:
     if parent_id == '0':
         parent_id = None
@@ -46,6 +47,34 @@ def start_menu_kb(width: int, parent_id) -> InlineKeyboardMarkup:
             callback_data=f'startmenu:0')
         buttons.append(back_button)
     kb_builder.row(*buttons, width=width)
+    return kb_builder.as_markup()
+
+
+def start_menu_kb2(width: int, parent_id='0') -> ReplyKeyboardMarkup:
+    if parent_id == '0':
+        parent_id = None
+    kb_builder: ReplyKeyboardBuilder = ReplyKeyboardBuilder()
+    buttons = []
+    session = Session()
+    with session:
+        start_menu_items: list[Menu] = session.query(Menu).filter(
+            Menu.parent_id == parent_id).order_by(Menu.index).all()
+    for num, menu_item in enumerate(start_menu_items, 1):
+        callback_button = KeyboardButton(
+            text=menu_item.text)
+        buttons.append(callback_button)
+    # back
+
+    if parent_id is None:
+        for button in buttons[:-1]:
+            kb_builder.row(button)
+        kb_builder.add(buttons[-1])
+    else:
+        back_button = KeyboardButton(
+            text='⇤ Назад')
+        for button in buttons[:-1]:
+            kb_builder.row(button)
+        kb_builder.row(back_button, buttons[-1], width=2)
     return kb_builder.as_markup()
 
 
