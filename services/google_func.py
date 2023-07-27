@@ -80,7 +80,7 @@ async def read_stats_from_table():
     url = config.tg_bot.USER_STAT_URL
     sheet = await agc.open_by_url(url)
     table = await sheet.get_worksheet(0)
-    values = await table.get_values('A:P')
+    values = await table.get_values('A:R')
     columns_name = values[0]
     stat_dict = {}
     date = columns_name[0]
@@ -156,13 +156,17 @@ async def read_msg_from_table() -> tuple[list, str]:
 
 
 if __name__ == '__main__':
+    pass
     # x = asyncio.run(read_stats_from_table())
-    # print('stat', x)
-    y = read_user_from_table()
-    print()
-    for u in y.items():
-        print(u)
-        break
+    # for ax in x:
+    #     print(x['132885'])
+    #     break
+
+    # y = read_user_from_table()
+    # print()
+    # for u in y.items():
+    #     print(u)
+    #     break
     # print(y)
     # asyncio.run(write_stats_from_table())
 

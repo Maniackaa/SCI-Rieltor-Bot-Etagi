@@ -87,7 +87,10 @@ class Menu(Base):
     def get_items(parent=None):
         _session = Session()
         with _session:
-            _menu_items = session.query(Menu).filter(Menu.parent_id == parent).all()
+            if parent == 'all':
+                _menu_items = session.query(Menu).filter().all()
+            else:
+                _menu_items = session.query(Menu).filter(Menu.parent_id == parent).all()
             return _menu_items
 
 
