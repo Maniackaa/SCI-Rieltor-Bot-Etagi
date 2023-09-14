@@ -25,6 +25,13 @@ async def csi_job(bot):
     await send_csi_to_users(bot, users_to_send)
 
 
+# async def csi_first_days(bot):
+#     # Запрос анкетирования CSI
+#     users_to_send = find_10days_users()
+#     logger.debug(f'Сегодня найдены пользовтаели для рассылки новеньких CSI:\n{users_to_send}')
+#     await send_csi_to_users(bot, users_to_send)
+
+
 async def send_report(bot):
     # Рассылка статистики каждый вторник
     users_to_send_report = find_users_to_send_report()

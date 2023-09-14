@@ -24,12 +24,12 @@ def read_user_from_table():
     sheet = gc.open_by_url(url)
     table = sheet.get_worksheet(0)
     values = table.get_values('A:T')[2:]
-    logger.debug(f'values: {values}')
+    # logger.debug(f'values: {values}')
     users = {}
 
     for row in values:
         try:
-            logger.debug(f'row: {row}')
+            # logger.debug(f'row: {row}')
             rieltor_code = row[0]
             phone = row[1] or '-'
             fio = row[2] or '-'
@@ -39,7 +39,7 @@ def read_user_from_table():
             date4 = row[13] or '1999-01-01'
             date5 = row[16] or '1999-01-01'
             date6 = row[19] or '1999-01-01'
-            logger.debug(f'{rieltor_code, phone, fio, date1, date2, date3, date4, date5, date6}')
+            # logger.debug(f'{rieltor_code, phone, fio, date1, date2, date3, date4, date5, date6}')
             users[rieltor_code] = {
                 'phone': phone,
                 'fio': fio,
@@ -74,13 +74,16 @@ async def read_stats_from_table():
     """
     Читает таблицу статистики пользователей.
     :return: Словарь со статистикой с ключом rieltor_code
+    {'date': '11.09.2023',
+     '133845': {'ФИО сотрудника': 'Альмаганбетов Алибек Дюсенбаевич', 'Категория': '0-3', 'Рейтинг': '15', 'Интегральный показатель': '81%', 'Заявки на покупку, план': '15', 'Заявки на покупку, факт': '30', 'Объекты в базе (активные), план': '30', 'Объекты в базе (активные), факт': '23', 'Консультации по ипотеке, план': '5', 'Консультации по ипотеке, факт': '4', 'Заявки в банк по ипотеке, план': '3', 'Заявки в банк, факт': '3', 'Подборки, план': '14', 'Подборки, факт': '42', 'Показы (покупатель), план': '9', 'Показы (покупатель), факт': '0'}, '1245788276': {'ФИО сотрудника': 'Алмазова Анна Дмитриевна', 'Категория': '4+', 'Рейтинг': '', 'Интегральный показатель': '', 'Заявки на покупку, план': '', 'Заявки на покупку, факт': '', 'Объекты в базе (активные), план': '', 'Объекты в базе (активные), факт': '', 'Консультации по ипотеке, план': '', 'Консультации по ипотеке, факт': '', 'Заявки в банк по ипотеке, план': '', 'Заявки в банк, факт': '', 'Подборки, план': '', 'Подборки, факт': '', 'Показы (покупатель), план': '', 'Показы (покупатель), факт': ''},
+     '1233': {'ФИО сотрудника': 'Москвитин Антон Валерьевич', 'Категория': 'Первая неделя', 'Рейтинг': '', 'Интегральный показатель': '', 'Заявки на покупку, план': '', 'Заявки на покупку, факт': '', 'Объекты в базе (активные), план': '', 'Объекты в базе (активные), факт': '', 'Консультации по ипотеке, план': '', 'Консультации по ипотеке, факт': '', 'Заявки в банк по ипотеке, план': '', 'Заявки в банк, факт': '', 'Подборки, план': '', 'Подборки, факт': '', 'Показы (покупатель), план': '', 'Показы (покупатель), факт': '', 'Затраты на рекламу, план': '', 'Затраты на рекламу, факт': '', 'Город': 'Тюмень'}
     """
     agcm = gspread_asyncio.AsyncioGspreadClientManager(get_creds)
     agc = await agcm.authorize()
     url = config.tg_bot.USER_STAT_URL
     sheet = await agc.open_by_url(url)
     table = await sheet.get_worksheet(0)
-    values = await table.get_values('A:R')
+    values = await table.get_values('A:U')
     columns_name = values[0]
     stat_dict = {}
     date = columns_name[0]
@@ -93,6 +96,7 @@ async def read_stats_from_table():
             user_dict[key] = value
         stat_dict[user_rieltor_code] = user_dict
     return stat_dict
+
 
 
 async def write_stats_from_table(rows):
@@ -157,10 +161,9 @@ async def read_msg_from_table() -> tuple[list, str]:
 
 if __name__ == '__main__':
     pass
-    # x = asyncio.run(read_stats_from_table())
-    # for ax in x:
-    #     print(x['132885'])
-    #     break
+
+    x = asyncio.run(read_stats_from_table())
+    print(x.keys())
 
     # y = read_user_from_table()
     # print()

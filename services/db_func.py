@@ -26,14 +26,43 @@ def get_today_users(day) -> dict[str, list[User | None]]:
     user_days_dict = {}
     session = Session()
     with session:
-        user_days_dict['date1'] = session.query(User).filter(User.date1 == day).all()
-        user_days_dict['date2'] = session.query(User).filter(User.date2 == day).all()
-        user_days_dict['date3'] = session.query(User).filter(User.date3 == day).all()
-        user_days_dict['date4'] = session.query(User).filter(User.date4 == day).all()
-        user_days_dict['date5'] = session.query(User).filter(User.date5 == day).all()
-        user_days_dict['date6'] = session.query(User).filter(User.date6 == day).all()
+        # user_days_dict['date1'] = session.query(User).filter(User.date1 == day).all()
+        # user_days_dict['date2'] = session.query(User).filter(User.date2 == day).all()
+        # user_days_dict['date3'] = session.query(User).filter(User.date3 == day).all()
+        # user_days_dict['date4'] = session.query(User).filter(User.date4 == day).all()
+        # user_days_dict['date5'] = session.query(User).filter(User.date5 == day).all()
+        # user_days_dict['date6'] = session.query(User).filter(User.date6 == day).all()
+        for i in range(1, 7):
+            user_days_dict[f'date{i}'] = session.query(User).filter(getattr(User, f'date{i}') == day).all()
+        for i in range(1, 11):
+             user_days_dict[f'day{i}'] = session.query(User).filter(getattr(User, f'day{i}') == day).all()
     return user_days_dict
 
+print(get_today_users(datetime.datetime.now().date()))
+
+# def get_10days_users(day: datetime.date) -> dict[str, list[User | None]]:
+#     """
+#     Возвращает словарь date1-date6 со списком юзеров
+#      у которых сегодня дата опроса.
+#     :param day: сегодняшний день
+#     :return: {'date1': [3. 585896156 AlexxxNik82], 'date2': [], 'date3': [],
+#      'date4': [], 'date5': [], 'date6': []
+#      }
+#     """
+#     logger.debug(f'Ищем 10 days за {str(day)}')
+#     user_days_dict = {}
+#     session = Session()
+#     with session:
+#         for i in range(1, 11):
+#             user_days_dict[f'day{i}'] = session.query(User).filter(User.date1 == day + datetime.timedelta(days=14 - i)).all()
+#             for user in user_days_dict[f'day{i}']:
+#                 print(i)
+#                 print(user, user.date1)
+#             print()
+#     logger.debug(user_days_dict)
+#     return user_days_dict
+#
+# print(get_10days_users(datetime.datetime.now().date()))
 
 def get_all_users() -> list[User]:
     session = Session()
@@ -120,5 +149,6 @@ def read_lexicon_from_db():
 
 
 if __name__ == '__main__':
-    asyncio.run(report())
+    # asyncio.run(report())
+    pass
 

@@ -1,3 +1,4 @@
+import aioschedule
 from aiogram import Dispatcher, types, Router, Bot, F
 from aiogram.filters import Command, CommandStart, Text, StateFilter, \
     BaseFilter
@@ -12,9 +13,11 @@ from keyboards.keyboards import start_menu_kb, start_kb, contact_kb, \
 
 from services.func import get_or_create_user, update_user, get_menu_from_index, \
     write_log, get_history, format_user_sats, send_message_to_manager, \
-    get_index_menu_from_text
+    get_index_menu_from_text, send_report_to_users
 from services.google_func import read_user_from_table, read_stats_from_table, \
     add_log_to_gtable
+
+
 
 from config_data.config import LOGGING_CONFIG, config
 import logging.config
@@ -53,7 +56,7 @@ async def process_start_command(message: Message, state: FSMContext):
 
 # Прием телефона
 @router.message(StateFilter(FSMCheckUser.send_phone))
-async def receive_phone(message: Message, state: FSMContext):
+async def receive_phone(message: Message, state: FSMContext, bot: Bot):
     print('Прием и проверка телефона')
     if message.contact:
         input_phone = message.contact.phone_number
@@ -62,16 +65,12 @@ async def receive_phone(message: Message, state: FSMContext):
         # Проверка телефона
         users_from_table = read_user_from_table()
         for rieltor_code, user_dict in users_from_table.items():
-            print()
             phone = user_dict['phone']
-            print(phone, input_phone.strip())
             if phone != '-' and input_phone.strip()[-10:] in phone:
                 print('eeeeee', rieltor_code, user_dict)
                 update_user(message.from_user.id, rieltor_code, user_dict)
                 log_text = f'{message.from_user.username or message.from_user.id} авторизовался по телефону {input_phone} как {rieltor_code}: {user_dict["fio"]}'
                 data = await state.get_data()
-                print(data)
-                print(log_text)
                 user = data['user']
                 await add_log_to_gtable(user, log_text)
                 write_log(user.id, log_text)
@@ -83,6 +82,11 @@ async def receive_phone(message: Message, state: FSMContext):
                     name = user_dict['fio']
                 text = Lexicon.get('/start').format(name)
                 await message.answer(text, reply_markup=start_kb)
+
+                # Отправка показателей
+                user_to_send = get_or_create_user(message.from_user)
+                await send_report_to_users([user_to_send], bot)
+
                 await state.clear()
                 return
         await message.answer('Ваш телефон не найден в базе, введите код риэлтора')
@@ -93,7 +97,7 @@ async def receive_phone(message: Message, state: FSMContext):
 
 # Проверка rieltor_code, заполнение User
 @router.message(StateFilter(FSMCheckUser.input_rieltor_code))
-async def check_rieltor_code(message: Message, state: FSMContext):
+async def check_rieltor_code(message: Message, state: FSMContext, bot: Bot):
     input_rieltor_code = message.text.strip()
     users_from_table = read_user_from_table()
     if input_rieltor_code in users_from_table:
@@ -115,6 +119,11 @@ async def check_rieltor_code(message: Message, state: FSMContext):
         user = data['user']
         await add_log_to_gtable(user, log_text)
         write_log(user.id, log_text)
+
+        # ОТправка статистики
+        user_to_send = get_or_create_user(message.from_user)
+        await send_report_to_users([user_to_send], bot)
+
         await state.clear()
     else:
         await message.answer('Такого кода нет, попробуйте снова!')
@@ -132,7 +141,7 @@ async def process_menu(message: Message, state: FSMContext):
 async def info(callback: CallbackQuery, state: FSMContext):
     message = callback.message
     user = get_or_create_user(callback.from_user)
-    logger.debug(f'Пользователь: {user}, emai: {user.rieltor_code}')
+    logger.debug(f'Пользователь: {user}, code: {user.rieltor_code}')
     user_stats = await read_stats_from_table()
     if user.rieltor_code in user_stats:
         logger.debug(f'Стата пользователя {user} найдена')
@@ -232,7 +241,3 @@ async def send_menu(message: Message, bot: Bot):
             await send_message_to_manager(bot, user, menu.navigation())
         write_log(user.id, log_text)
         await add_log_to_gtable(user, log_text)
-
-
-menu = IsMenu()
-print(menu.menu_items)

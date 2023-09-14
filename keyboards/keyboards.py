@@ -5,13 +5,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 from database.db import Session, Menu
 
 
-kb = [
 
-    [KeyboardButton(text="Меню")],
-    ]
-
-start_kb: ReplyKeyboardMarkup = ReplyKeyboardMarkup(keyboard=kb,
-                                                    resize_keyboard=True)
 
 
 contact_kb_buttons = [
@@ -107,5 +101,16 @@ def yes_no_kb(width: int) -> InlineKeyboardMarkup:
     ]
     kb_builder.row(*buttons, width=width)
     return kb_builder.as_markup()
+
+
+kb = [
+
+    [KeyboardButton(text="Меню")],
+    ]
+
+# start_kb: ReplyKeyboardMarkup = ReplyKeyboardMarkup(keyboard=kb,
+#                                                     resize_keyboard=True)
+
+start_kb = start_menu_kb2(1)
 
 # csi_kb(1, dat)

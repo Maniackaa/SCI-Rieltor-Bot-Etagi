@@ -31,6 +31,23 @@ def find_users_to_send() -> list[tuple[str, User, str]]:
     return tasks_to_send
 
 
+def find_10days_users() -> list[tuple[str, User, str]]:
+    """
+    Находит список новеньких юзеров 10 дней, которым сегодня нужна рассылка.
+    :return: [('day1', User, text), ]
+    """
+    today_date = datetime.date.today()
+    users_to_send = get_today_users(today_date)
+    tasks_to_send = []  # (date_num, user, text)
+    for date_num, users in users_to_send.items():
+        for user in users:
+            if user:
+                text = Lexicon.get(
+                    f'{date_num}_text') or 'Текст отсутствует'
+                tasks_to_send.append((date_num, user, text))
+    return tasks_to_send
+
+
 def find_users_to_send_report() -> list[User]:
     """
     Находит список юзеров, которым нужна рассылка статистики.
