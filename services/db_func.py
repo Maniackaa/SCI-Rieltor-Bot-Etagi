@@ -2,6 +2,8 @@ import asyncio
 import datetime
 import logging
 
+from sqlalchemy import func, update
+
 from database.db import User, Session, Lexicon
 
 from config_data.config import LOGGING_CONFIG
@@ -19,7 +21,7 @@ def get_today_users(day) -> dict[str, list[User | None]]:
      у которых сегодня дата опроса.
     :param day: сегодняшний день
     :return: {'date1': [3. 585896156 AlexxxNik82], 'date2': [], 'date3': [],
-     'date4': [], 'date5': [], 'date6': []
+     'date4': [], 'date5': [], 'date6': [], 'day1': []...
      }
     """
 
@@ -104,9 +106,10 @@ def save_csi_comment(date_num, user, comment):
 
 
 def get_users_to_send_message() -> list[User]:
+    """Достает всех юзеров с базы"""
     session = Session()
     with session:
-        user_db = session.query(User).all()
+        user_db = session.query(User).filter(User.rieltor_code.is_not(None)).all()
     return user_db
 
 
@@ -119,8 +122,11 @@ async def report():
     with session:
         all_users = session.query(User).all()
     report_key = ['tg_id', 'username', 'rieltor_code', 'fio']
+    for i in range(1, 11):
+        report_key.extend((f'day{i}', f'day{i}_csi', f'day{i}_comment'))
     for i in range(1, 7):
         report_key.extend((f'date{i}', f'date{i}_csi', f'date{i}_comment'))
+
     report_rows = []
     for user in all_users:
         row = []
@@ -135,10 +141,29 @@ async def report():
 
 
 def get_user_from_rieltor_code(rieltor_code) -> User:
-    """Из юзера ТГ возвращает сущестующего User ли создает его"""
-    with Session() as session:
-        user = session.query(User).filter(User.rieltor_code == rieltor_code).one_or_none()
-    return user
+    """Находит юзера по коду риалтора"""
+    try:
+        logger.debug(f'Ищем rieltor_code  {rieltor_code}')
+        rieltor_code = str(rieltor_code)
+        with Session() as session:
+            user = session.query(User).filter(User.rieltor_code == rieltor_code).first()
+            logger.debug(f'Найдено: {user}')
+        return user
+    except Exception as err:
+        logger.error(err)
+
+
+def get_user_from_rieltor_codes(rieltor_codes: list | set) -> list[User]:
+    """Находит юзера по сиписку кодов риалторов"""
+    try:
+        logger.debug(f'Ищем rieltor_code  {rieltor_codes}')
+        rieltor_codes = [str(val) for val in rieltor_codes]
+        with Session() as session:
+            users = session.query(User).filter(User.rieltor_code.in_(rieltor_codes)).all()
+            logger.debug(f'Найдено: {users}')
+        return users
+    except Exception as err:
+        logger.error(err)
 
 
 def read_lexicon_from_db():
@@ -146,6 +171,18 @@ def read_lexicon_from_db():
     with session:
         all_rows = session.query(Lexicon).order_by(Lexicon.id).all()
         return all_rows
+
+
+def clear_rieltor_code(rieltor_codes: list | set):
+    """Очищает rieltor_code в user"""
+    try:
+        with Session() as session:
+            # users = session.query(User).filter(User.rieltor_code.in_(rieltor_codes)).all()
+            q = session.query(User).where(User.rieltor_code.in_(rieltor_codes)).update({'rieltor_code': None})
+            session.commit()
+            return q
+    except Exception as err:
+        logger.error(err)
 
 
 if __name__ == '__main__':

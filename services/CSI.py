@@ -21,13 +21,16 @@ def find_users_to_send() -> list[tuple[str, User, str]]:
     """
     today_date = datetime.date.today()
     users_to_send = get_today_users(today_date)
+    """{'date1': [3. 585896156 AlexxxNik82, ...], 'date2': [], 'date3': [],
+     'date4': [], 'date5': [], 'date6': [], 'day1': []...
+     }"""
     tasks_to_send = []  # (date_num, user, text)
-    for date_num, users in users_to_send.items():
+    for column_name, users in users_to_send.items():
         for user in users:
             if user:
                 text = Lexicon.get(
-                    f'{date_num}_text') or 'Текст отсутствует'
-                tasks_to_send.append((date_num, user, text))
+                    f'{column_name}_text') or 'Текст отсутствует'
+                tasks_to_send.append((column_name, user, text))
     return tasks_to_send
 
 

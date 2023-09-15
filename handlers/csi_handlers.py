@@ -33,26 +33,28 @@ class FSMCSI(StatesGroup):
     CSI_comment = State()
 
 
-async def send_csi_to_users(bot: Bot, tasks):
+async def send_csi_to_users(bot: Bot, tasks, type_date):
     """
     Функция отправки анкеты CSI через бота
     :param bot:
     :param tasks: [('date1', User, text), ]
+    :param type_date: 'day' / 'date'
     :return:
     """
     for task in tasks:
         date_num = task[0]
         user = task[1]
         text = task[2]
-        try:
-            await bot.send_message(user.tg_id, text.format(user.fio.split()[1]),
-                                   reply_markup=csi_kb(1, date_num))
-            await asyncio.sleep(0.2)
-            logger.info(f'Сообщение CSI {date_num}  для {user} отправлено')
-        except TelegramForbiddenError:
-            logger.warning(f'Сообщение CSI {date_num}  для {user} НЕ отправлено, так как пользователь заблокировал бота')
-        except Exception as err:
-            err_log.error(f'Сообщение CSI {date_num}  для {user} не отправлено', exc_info=True)
+        if date_num.startswith(type_date):
+            try:
+                await bot.send_message(user.tg_id, text.format(user.fio.split()[1]),
+                                       reply_markup=csi_kb(1, date_num))
+                await asyncio.sleep(0.2)
+                logger.info(f'Сообщение CSI {date_num}  для {user} отправлено')
+            except TelegramForbiddenError:
+                logger.warning(f'Сообщение CSI {date_num}  для {user} НЕ отправлено, так как пользователь заблокировал бота')
+            except Exception as err:
+                err_log.error(f'Сообщение CSI {date_num}  для {user} не отправлено', exc_info=True)
 
 
 @router.callback_query(Text(startswith='CSI_answer:'))

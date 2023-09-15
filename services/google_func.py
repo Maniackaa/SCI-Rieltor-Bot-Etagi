@@ -23,35 +23,38 @@ def read_user_from_table():
     url = config.tg_bot.USER_TABLE_URL
     sheet = gc.open_by_url(url)
     table = sheet.get_worksheet(0)
-    values = table.get_values('A:T')[2:]
+    values = table.get_values('A:AZ')[2:]
     # logger.debug(f'values: {values}')
     users = {}
 
     for row in values:
         try:
-            # logger.debug(f'row: {row}')
+            logger.debug(f'row: {row}')
             rieltor_code = row[0]
             phone = row[1] or '-'
             fio = row[2] or '-'
-            date1 = row[4] or '1999-01-01'
-            date2 = row[7] or '1999-01-01'
-            date3 = row[10] or '1999-01-01'
-            date4 = row[13] or '1999-01-01'
-            date5 = row[16] or '1999-01-01'
-            date6 = row[19] or '1999-01-01'
-            # logger.debug(f'{rieltor_code, phone, fio, date1, date2, date3, date4, date5, date6}')
+            is_delete = bool(row[-1])
             users[rieltor_code] = {
                 'phone': phone,
                 'fio': fio,
-                'date1': datetime.date.fromisoformat(date1),
-                'date2': datetime.date.fromisoformat(date2),
-                'date3': datetime.date.fromisoformat(date3),
-                'date4': datetime.date.fromisoformat(date4),
-                'date5': datetime.date.fromisoformat(date5),
-                'date6': datetime.date.fromisoformat(date6),
+                'is_delete': is_delete
             }
+            print(row)
+            print(len(row))
+            for num, val in enumerate(row):
+                print(num, val)
+
+            for num, i in enumerate(range(4, 32, 3), 1):
+                value = row[i] or '1999-01-01'
+                date = datetime.date.fromisoformat(value)
+                users[rieltor_code][f'day{num}'] = date
+            for num, i in enumerate(range(34, 50, 3), 1):
+                value = row[i] or '1999-01-01'
+                date = datetime.date.fromisoformat(value)
+                users[rieltor_code][f'date{num}'] = date
         except Exception as err:
             err_log.error(f'Ошибка при чтении строки {row}')
+            raise err
     return users
 
 from google.oauth2.service_account import Credentials
@@ -68,6 +71,16 @@ def get_creds():
         "https://www.googleapis.com/auth/drive",
     ])
     return scoped
+
+
+async def load_range_values(url=config.tg_bot.USER_TABLE_URL, sheets_num=0, diap='А:А'):
+    agcm = gspread_asyncio.AsyncioGspreadClientManager(get_creds)
+    agc = await agcm.authorize()
+    url = url
+    sheet = await agc.open_by_url(url)
+    table = await sheet.get_worksheet(sheets_num)
+    values = await table.get_values(diap)
+    return values
 
 
 async def read_stats_from_table():
@@ -96,7 +109,6 @@ async def read_stats_from_table():
             user_dict[key] = value
         stat_dict[user_rieltor_code] = user_dict
     return stat_dict
-
 
 
 async def write_stats_from_table(rows):
@@ -143,30 +155,64 @@ async def add_log_to_gtable(user: User, text: str):
         logger.debug(err)
 
 
-async def read_msg_from_table() -> tuple[list, str]:
+
+async def read_msg_from_table() -> dict:
     """
     Читает таблицу "Рассылка сообщений"
     :return: список для рассылки и текст сообщения
+    {'senders': [],
+     'text': 'Коллеги, пошаговая инструкция ',
+     'city': 'Москва'
+     }
+
     """
     agcm = gspread_asyncio.AsyncioGspreadClientManager(get_creds)
     agc = await agcm.authorize()
     url = config.tg_bot.USER_TABLE_URL
     sheet = await agc.open_by_url(url)
     table = await sheet.get_worksheet(3)
-    text_cell = await table.cell(2, 3)
-    text = text_cell.value
+    values = await load_range_values(sheets_num=3, diap='C2:D2')
+    text = values[0][0]
+    city = values[0][1]
     senders = await table.get_values('A:A')
-    return senders, text
+    senders = [val[0] for val in senders]
+    result = {
+        'senders': senders,
+        'text': text,
+        'city': city
+    }
+    return result
 
+
+async def get_user_code_from_city(city_to_send) -> set[str]:
+    """
+    Достает список кодов риэлторов с указанным городом
+    :param city:
+    :return:
+    """
+    users = await load_range_values(url=config.tg_bot.USER_STAT_URL, diap='A:U')
+    users_rieltor_codes_to_send = set()
+    for user in users:
+        rieltor_code = user[1]
+        user_city = user[-1]
+        if user_city == city_to_send:
+            users_rieltor_codes_to_send.add(rieltor_code)
+    return users_rieltor_codes_to_send
+
+
+async def get_codes_to_delete() -> set[str]:
+    all_users = await load_range_values(diap='A:AZ')
+    all_users = all_users[2:]
+    codes_to_delete = set()
+    for user in all_users:
+        if user[-1]:
+            codes_to_delete.add(user[0])
+    return codes_to_delete
 
 if __name__ == '__main__':
     pass
 
-    x = asyncio.run(read_stats_from_table())
-    print(x.keys())
 
-    # y = read_user_from_table()
-    # print()
     # for u in y.items():
     #     print(u)
     #     break

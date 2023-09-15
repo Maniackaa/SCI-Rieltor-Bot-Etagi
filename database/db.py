@@ -94,7 +94,7 @@ class Menu(Base):
                                     comment='Первичный ключ')
     text: Mapped[str] = mapped_column(String(100), default='-')
     parent_id: Mapped[int] = mapped_column(
-        ForeignKey("menu_items.id"), default=None, nullable=True)
+        ForeignKey("menu_items.id", ondelete='CASCADE'), default=None, nullable=True)
     is_with_children: Mapped[int] = mapped_column(
         Integer(), server_default='0', nullable=False)
     index: Mapped[str] = mapped_column(String(20))
@@ -130,7 +130,7 @@ class History(Base):
                                     autoincrement=True,
                                     comment='Первичный ключ')
     user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id"))
+        ForeignKey("users.id", ondelete='CASCADE'))
     time: Mapped[datetime.datetime] = mapped_column(DateTime())
     text: Mapped[str] = mapped_column(String(250), nullable=True)
 

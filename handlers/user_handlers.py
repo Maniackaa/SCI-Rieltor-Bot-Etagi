@@ -66,7 +66,7 @@ async def receive_phone(message: Message, state: FSMContext, bot: Bot):
         users_from_table = read_user_from_table()
         for rieltor_code, user_dict in users_from_table.items():
             phone = user_dict['phone']
-            if phone != '-' and input_phone.strip()[-10:] in phone:
+            if phone != '-' and input_phone.strip()[-10:] in phone and not user_dict.get('is_delete'):
                 print('eeeeee', rieltor_code, user_dict)
                 update_user(message.from_user.id, rieltor_code, user_dict)
                 log_text = f'{message.from_user.username or message.from_user.id} авторизовался по телефону {input_phone} как {rieltor_code}: {user_dict["fio"]}'
@@ -101,32 +101,36 @@ async def check_rieltor_code(message: Message, state: FSMContext, bot: Bot):
     input_rieltor_code = message.text.strip()
     users_from_table = read_user_from_table()
     if input_rieltor_code in users_from_table:
-        g_user: dict = users_from_table[input_rieltor_code]
-        fio = g_user.get("fio")
-        logger.debug(f'fio: {fio}')
-        name = fio.split()
-        logger.debug(f'name: {name}')
-        if name and len(name) == 3:
-            name = name[1]
+        if not users_from_table[input_rieltor_code].get('is_delete'):
+            g_user: dict = users_from_table[input_rieltor_code]
+            fio = g_user.get("fio")
+            logger.debug(f'fio: {fio}')
+            name = fio.split()
+            logger.debug(f'name: {name}')
+            if name and len(name) == 3:
+                name = name[1]
+            else:
+                name = fio
+
+            text = Lexicon.get('/start').format(name)
+            await message.answer(text, reply_markup=start_kb)
+            update_user(message.from_user.id, input_rieltor_code, g_user)
+            log_text = f'{message.from_user.username or message.from_user.id} подтвердил rieltor_code {input_rieltor_code}'
+            data = await state.get_data()
+            user = data['user']
+            await add_log_to_gtable(user, log_text)
+            write_log(user.id, log_text)
+
+            # ОТправка статистики
+            user_to_send = get_or_create_user(message.from_user)
+            await send_report_to_users([user_to_send], bot)
+            await state.clear()
         else:
-            name = fio
-
-        text = Lexicon.get('/start').format(name)
-        await message.answer(text, reply_markup=start_kb)
-        update_user(message.from_user.id, input_rieltor_code, g_user)
-        log_text = f'{message.from_user.username or message.from_user.id} подтвердил rieltor_code {input_rieltor_code}'
-        data = await state.get_data()
-        user = data['user']
-        await add_log_to_gtable(user, log_text)
-        write_log(user.id, log_text)
-
-        # ОТправка статистики
-        user_to_send = get_or_create_user(message.from_user)
-        await send_report_to_users([user_to_send], bot)
-
-        await state.clear()
+            await message.answer('Вы удалены из базы')
+            await state.clear()
     else:
         await message.answer('Такого кода нет, попробуйте снова!')
+        await state.clear()
 
 
 @router.message(Text(text=["Меню"]))
@@ -152,47 +156,6 @@ async def info(callback: CallbackQuery, state: FSMContext):
     await message.delete()
     await add_log_to_gtable(user, f'{user.fio} запросил статистику')
 
-# # Обработка Мои показатели
-# @router.callback_query(Text(text='startmenu:4'))
-# async def send_my_stat(callback: CallbackQuery):
-#     await callback.message.answer('Ваши показатели')
-#     await callback.message.delete()
-
-
-# # Обработка нажатий меню пользователя
-# @router.callback_query(Text(startswith='startmenu:'))
-# async def send_echo(callback: CallbackQuery, bot: Bot):
-#     index = callback.data.split('startmenu:')[1]
-#     if index == '0':
-#         menu = Menu(index=None, text='Главное меню', is_with_children=1)
-#     else:
-#         menu: Menu = get_menu_from_index(index)
-#     user = get_or_create_user(callback.from_user)
-#     log_text = f'{user.fio or user.username}: {menu.index}. {menu.text}'
-#     if menu.is_with_children:
-#         await callback.answer(menu.text)
-#         await callback.message.edit_text(menu.text, reply_markup=start_menu_kb(1, index))
-#     else:
-#         await callback.message.answer(text=menu.navigation())
-#         await callback.message.answer(Lexicon.get('menu_select'))
-#         await send_message_to_manager(bot, user, menu.navigation())
-#         await callback.message.delete()
-#     write_log(user.id, log_text)
-#     await add_log_to_gtable(user, log_text)
-
-
-# # refresh lixicon
-# @router.message(Command(commands=["refresh"]))
-# async def send_echo(message: Message, bot: Bot):
-#     # global LEXICON
-#     global csi_text
-#     db_lexicon = [x.text for x in read_lexicon_from_db()]
-#     csi_text = db_lexicon[1]
-#     LEXICON = refresh_lexicon()
-#     await message.answer('Словарь обновлен')
-#     await message.answer(LEXICON['/start'])
-
-# Последний эхо-фильтр
 
 class IsMenu(BaseFilter):
     def __init__(self) -> None:

@@ -9,14 +9,14 @@ from aiogram.types import CallbackQuery, Message
 from config_data.config import config
 from database.db import History
 from keyboards.keyboards import yes_no_kb
-from services.db_func import get_users_to_send_message, get_user_from_rieltor_code
+from services.db_func import get_users_to_send_message, get_user_from_rieltor_code, get_user_from_rieltor_codes
 from services.func import get_history
 
 
 from config_data.config import LOGGING_CONFIG
 import logging.config
 
-from services.google_func import read_msg_from_table
+from services.google_func import read_msg_from_table, get_user_code_from_city
 
 logging.config.dictConfig(LOGGING_CONFIG)
 logger = logging.getLogger('bot_logger')
@@ -75,19 +75,42 @@ async def send_to_all(message: Message, state: FSMContext, bot: Bot):
 
 @router.message(Command(commands=["send"]))
 async def command_send_to_all(message: Message,  state: FSMContext):
-    senders, text = await read_msg_from_table()
-    q_text = f'Список для отправки:\n'
-    users = set()
-    for sender in senders:
-        user = get_user_from_rieltor_code(sender[0])
-        if user:
-            users.add(user)
-            q_text += user.fio + '\n'
-    await message.answer(q_text)
-    await message.answer(f'Сообщение для отправки:\n\n {text}')
-    await message.answer('Отправить сообщение?', reply_markup=yes_no_kb(2))
-    await state.set_state(FSMAdmin.send_message_from_table)
-    await state.update_data(users=users, text=text)
+    logger.debug('send')
+    send_dict = await read_msg_from_table()
+    senders = send_dict.get('senders')
+    text = send_dict.get('text')
+    logger.info(f'senders: {senders}')
+    users = get_user_from_rieltor_codes(senders)
+    if users:
+        await message.answer(f'Найдено {len(users)} пользовтаелей')
+        await message.answer(f'Сообщение для отправки:\n\n {text}')
+        await message.answer('Отправить сообщение?', reply_markup=yes_no_kb(2))
+        await state.set_state(FSMAdmin.send_message_from_table)
+        await state.update_data(users=users, text=text)
+    else:
+        await message.answer(f'Не найдено пользователй для рассылки')
+
+
+@router.message(Command(commands=["send_to_city"]))
+async def command_send_to_all(message: Message,  state: FSMContext):
+    logger.debug('send_to_city')
+    send_dict = await read_msg_from_table()
+    city = send_dict.get('city')
+    logger.debug(f'city: {city}')
+    senders = await get_user_code_from_city(city)
+    if senders:
+        logger.debug(f'{len(senders)}')
+    text = send_dict.get('text')
+    logger.debug(f'{text}')
+    users = get_user_from_rieltor_codes(senders)
+    if users:
+        await message.answer(f'Найдено пользователей из города {city}: {len(city)}')
+        await message.answer(f'Сообщение для отправки:\n\n {text}')
+        await message.answer('Отправить сообщение?', reply_markup=yes_no_kb(2))
+        await state.set_state(FSMAdmin.send_message_from_table)
+        await state.update_data(users=users, text=text)
+    else:
+        await message.answer(f'Не найдено пользователй из города {city}')
 
 
 # Обработка send yes/no

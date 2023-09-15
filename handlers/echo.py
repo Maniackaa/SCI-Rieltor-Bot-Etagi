@@ -7,7 +7,8 @@ from aiogram.filters import Command, BaseFilter
 from aiogram.types import Message, CallbackQuery, Chat
 
 from config_data.config import config
-from services.func import get_or_create_user
+from services.func import get_or_create_user, write_log, check_user
+from services.google_func import add_log_to_gtable
 
 router: Router = Router()
 
@@ -36,6 +37,9 @@ async def send_message_to_group(message: Message, bot: Bot):
         ),
         parse_mode='HTML'
     )
+    log_text = f'{message.from_user.username or message.from_user.id} написал в чат: {message.text}'
+    write_log(user.id, log_text)
+    await add_log_to_gtable(user, log_text)
 
 
 def extract_user_id(message: Message) -> int:
@@ -101,6 +105,10 @@ async def send_message_answer(message: Message, bot: Bot):
                                text=f'{message.text}\n\n'
                                     f'<code>Ваш вопрос:\n{reply_text}</code>'
                                )
+        user = check_user(chat_id)
+        log_text = f'{message.text}'
+        write_log(user.id, log_text)
+        await add_log_to_gtable(user, log_text)
 
     except ValueError as err:
         await message.reply(text=f'Не могу извлечь Id.  Возможно он '
@@ -130,6 +138,11 @@ async def supported_media(message: Message):
                      f"\n\n#id{message.from_user.id}"),
             parse_mode="HTML"
         )
+        user = get_or_create_user(message.from_user)
+        log_text = f'{message.caption}'
+        write_log(user.id, log_text)
+
+        await add_log_to_gtable(user, log_text)
 
 
 # Последний эхо-фильтр
