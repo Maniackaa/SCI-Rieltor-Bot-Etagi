@@ -23,9 +23,9 @@ err_log = logging.getLogger('errors_logger')
 
 async def csi_week_job(bot):
     # Запрос анкетирования CSI
-    users_to_send = find_users_to_send()
-    logger.debug(f'Сегодня найдены пользовтаели для рассылки CSI:\n{users_to_send}')
-    await send_csi_to_users(bot, users_to_send, 'date')
+    tasks = find_users_to_send()
+    logger.debug(f'Сегодня найдены пользовтаели для рассылки CSI:\n{tasks}')
+    await send_csi_to_users(bot, tasks, 'date')
 
 
 async def csi_day_job(bot):

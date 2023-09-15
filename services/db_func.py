@@ -40,7 +40,7 @@ def get_today_users(day) -> dict[str, list[User | None]]:
              user_days_dict[f'day{i}'] = session.query(User).filter(getattr(User, f'day{i}') == day).all()
     return user_days_dict
 
-print(get_today_users(datetime.datetime.now().date()))
+# print(get_today_users(datetime.datetime.now().date()))
 
 # def get_10days_users(day: datetime.date) -> dict[str, list[User | None]]:
 #     """

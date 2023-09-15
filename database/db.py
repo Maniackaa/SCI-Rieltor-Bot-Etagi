@@ -34,6 +34,7 @@ class User(Base):
     rieltor_code: Mapped[str] = mapped_column(String(50), nullable=True)
     register_date: Mapped[datetime.datetime] = mapped_column(DateTime(), nullable=True)
     fio: Mapped[str] = mapped_column(String(100), nullable=True)
+    city: Mapped[str] = mapped_column(String(50), nullable=True)
     date1: Mapped[datetime.date] = mapped_column(Date(), nullable=True)
     date2: Mapped[datetime.date] = mapped_column(Date(), nullable=True)
     date3: Mapped[datetime.date] = mapped_column(Date(), nullable=True)

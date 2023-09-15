@@ -23,26 +23,28 @@ def read_user_from_table():
     url = config.tg_bot.USER_TABLE_URL
     sheet = gc.open_by_url(url)
     table = sheet.get_worksheet(0)
-    values = table.get_values('A:AZ')[2:]
+    values = table.get_values('A:BA')[2:]
     # logger.debug(f'values: {values}')
     users = {}
 
     for row in values:
         try:
-            logger.debug(f'row: {row}')
+            # logger.debug(f'row: {row}')
             rieltor_code = row[0]
             phone = row[1] or '-'
             fio = row[2] or '-'
-            is_delete = bool(row[-1])
+            city = row[-1]
+            is_delete = bool(row[-2])
             users[rieltor_code] = {
                 'phone': phone,
                 'fio': fio,
-                'is_delete': is_delete
+                'is_delete': is_delete,
+                'city': city
             }
-            print(row)
-            print(len(row))
-            for num, val in enumerate(row):
-                print(num, val)
+            # print(row)
+            # print(len(row))
+            # for num, val in enumerate(row):
+            #     print(num, val)
 
             for num, i in enumerate(range(4, 32, 3), 1):
                 value = row[i] or '1999-01-01'
@@ -54,7 +56,6 @@ def read_user_from_table():
                 users[rieltor_code][f'date{num}'] = date
         except Exception as err:
             err_log.error(f'Ошибка при чтении строки {row}')
-            raise err
     return users
 
 from google.oauth2.service_account import Credentials

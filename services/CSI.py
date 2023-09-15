@@ -28,8 +28,12 @@ def find_users_to_send() -> list[tuple[str, User, str]]:
     for column_name, users in users_to_send.items():
         for user in users:
             if user:
-                text = Lexicon.get(
-                    f'{column_name}_text') or 'Текст отсутствует'
+                if user.city:
+                    text = Lexicon.get(
+                        f'{column_name}_text_{user.city}') or 'Текст отсутствует'
+                else:
+                    text = Lexicon.get(
+                        f'{column_name}_text') or 'Текст отсутствует'
                 tasks_to_send.append((column_name, user, text))
     return tasks_to_send
 
