@@ -10,17 +10,28 @@ from config_data.config import config
 from services.func import get_or_create_user, write_log, check_user
 from services.google_func import add_log_to_gtable
 
+
+class IsAuthorized(BaseFilter):
+    def __init__(self) -> None:
+        pass
+
+    async def __call__(self, message: Message, event_from_user, bot: Bot, *args, **kwargs) -> bool:
+        if isinstance(message, CallbackQuery):
+            message = message.message
+        user = check_user(event_from_user.id)
+        if user and user.rieltor_code:
+            return True
+        return False
+
+
 router: Router = Router()
-
-
-
 
 GROUP_ID = config.tg_bot.GROUP_ID
 GROUP_TYPE = config.tg_bot.GROUP_TYPE
 
 
 # Копия сообщения из бота в группу
-@router.message(F.chat.type == 'private', F.text)
+@router.message(F.chat.type == 'private', F.text, IsAuthorized())
 async def send_message_to_group(message: Message, bot: Bot):
     print('send_message_to_group')
     print(message)
@@ -125,7 +136,7 @@ class SupportedMediaFilter(BaseFilter):
         )
 
 
-@router.message(SupportedMediaFilter(), F.chat.type == 'private')
+@router.message(SupportedMediaFilter(), F.chat.type == 'private', IsAuthorized())
 async def supported_media(message: Message):
     print('supported_media')
     if message.caption and len(message.caption) > 1000:

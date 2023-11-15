@@ -35,9 +35,9 @@ def get_today_users(day) -> dict[str, list[User | None]]:
         # user_days_dict['date5'] = session.query(User).filter(User.date5 == day).all()
         # user_days_dict['date6'] = session.query(User).filter(User.date6 == day).all()
         for i in range(1, 7):
-            user_days_dict[f'date{i}'] = session.query(User).filter(getattr(User, f'date{i}') == day).all()
+            user_days_dict[f'date{i}'] = session.query(User).filter(getattr(User, f'date{i}') == day).filter(User.rieltor_code.is_not(None)).all()
         for i in range(1, 11):
-             user_days_dict[f'day{i}'] = session.query(User).filter(getattr(User, f'day{i}') == day).all()
+             user_days_dict[f'day{i}'] = session.query(User).filter(getattr(User, f'day{i}') == day).filter(User.rieltor_code.is_not(None)).all()
     return user_days_dict
 
 # print(get_today_users(datetime.datetime.now().date()))
@@ -176,16 +176,23 @@ def read_lexicon_from_db():
 def clear_rieltor_code(rieltor_codes: list | set):
     """Очищает rieltor_code в user"""
     try:
-        with Session() as session:
+        session = Session()
+        commands = {'rieltor_code': None, 'fio': None}
+        for i in range(1, 7):
+            commands[f'date{i}'] = None
+        for i in range(1, 11):
+            commands[f'day{i}'] = None
+        with session:
             # users = session.query(User).filter(User.rieltor_code.in_(rieltor_codes)).all()
-            q = session.query(User).where(User.rieltor_code.in_(rieltor_codes)).update({'rieltor_code': None})
+            result = session.query(User).where(User.rieltor_code.in_(rieltor_codes)).update(commands)
             session.commit()
-            return q
+            return result
     except Exception as err:
         logger.error(err)
 
 
 if __name__ == '__main__':
     # asyncio.run(report())
+    # clear_rieltor_code(['1241424124124124124124'])
     pass
 

@@ -202,6 +202,7 @@ async def get_user_code_from_city(city_to_send) -> set[str]:
 
 
 async def get_codes_to_delete() -> set[str]:
+    # Если в столбце AZ есть значение, считаем что удалять
     all_users = await load_range_values(diap='A:AZ')
     all_users = all_users[2:]
     codes_to_delete = set()
