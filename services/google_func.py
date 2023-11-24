@@ -118,7 +118,7 @@ async def write_stats_from_table(rows):
     :param rows:
     :return:
     """
-    logger.debug(f'Добавляем {rows}')
+    # logger.debug(f'Добавляем {rows}')
     agcm = gspread_asyncio.AsyncioGspreadClientManager(get_creds)
     agc = await agcm.authorize()
     url = config.tg_bot.USER_TABLE_URL
