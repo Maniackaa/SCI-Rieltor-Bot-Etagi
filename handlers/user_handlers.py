@@ -40,9 +40,10 @@ async def process_start_command(message: Message, state: FSMContext):
     tg_user = message.from_user
     user: User = get_or_create_user(tg_user)
     if not user.rieltor_code:
-        await message.answer('Нажмите "Поделиться телефоном" для авторизации',
-                             reply_markup=contact_kb)
-        await state.set_state(FSMCheckUser.send_phone)
+        # await message.answer('Нажмите "Поделиться телефоном" для авторизации',
+        #                      reply_markup=contact_kb)
+        await message.answer('Введите код риэлтора для авторизации')
+        await state.set_state(FSMCheckUser.input_rieltor_code)
         await state.update_data(user=user)
     else:
         text = Lexicon.get('/start').format(user.fio.split()[1] or user.username)
@@ -54,82 +55,87 @@ async def process_start_command(message: Message, state: FSMContext):
     write_log(user.id, log_text)
 
 
-# Прием телефона
-@router.message(StateFilter(FSMCheckUser.send_phone))
-async def receive_phone(message: Message, state: FSMContext, bot: Bot):
-    print('Прием и проверка телефона')
-    if message.contact:
-        input_phone = message.contact.phone_number
-        await state.update_data(input_phone=input_phone)
-        await message.answer(f'Ваш телефон {input_phone}')
-        # Проверка телефона
-        users_from_table = read_user_from_table()
-        for rieltor_code, user_dict in users_from_table.items():
-            phone = user_dict['phone']
-            if phone != '-' and input_phone.strip()[-10:] in phone and not user_dict.get('is_delete'):
-                print('eeeeee', rieltor_code, user_dict)
-                update_user(message.from_user.id, rieltor_code, user_dict)
-                log_text = f'{message.from_user.username or message.from_user.id} авторизовался по телефону {input_phone} как {rieltor_code}: {user_dict["fio"]}'
-                data = await state.get_data()
-                user = data['user']
-                await add_log_to_gtable(user, log_text)
-                write_log(user.id, log_text)
-                await message.answer('Вы авторизовались!', reply_markup=start_kb)
-                name = user_dict['fio'].split()
-                if name and len(name) == 3:
-                    name = name[1]
-                else:
-                    name = user_dict['fio']
-                text = Lexicon.get('/start').format(name)
-                await message.answer(text, reply_markup=start_kb)
-
-                # Отправка показателей
-                user_to_send = get_or_create_user(message.from_user)
-                await send_report_to_users([user_to_send], bot)
-
-                await state.clear()
-                return
-        await message.answer('Ваш телефон не найден в базе, введите код риэлтора')
-        await state.set_state(FSMCheckUser.input_rieltor_code)
-    else:
-        await message.answer('Нажмите "Поделиться телефоном" для авторизации')
+# # Прием телефона
+# @router.message(StateFilter(FSMCheckUser.send_phone))
+# async def receive_phone(message: Message, state: FSMContext, bot: Bot):
+#     print('Прием и проверка телефона')
+#     if message.contact:
+#         input_phone = message.contact.phone_number
+#         await state.update_data(input_phone=input_phone)
+#         await message.answer(f'Ваш телефон {input_phone}')
+#         # Проверка телефона
+#         users_from_table = read_user_from_table()
+#         for rieltor_code, user_dict in users_from_table.items():
+#             phone = user_dict['phone']
+#             if phone != '-' and input_phone.strip()[-10:] in phone and not user_dict.get('is_delete'):
+#                 print('eeeeee', rieltor_code, user_dict)
+#                 update_user(message.from_user.id, rieltor_code, user_dict)
+#                 log_text = f'{message.from_user.username or message.from_user.id} авторизовался по телефону {input_phone} как {rieltor_code}: {user_dict["fio"]}'
+#                 data = await state.get_data()
+#                 user = data['user']
+#                 await add_log_to_gtable(user, log_text)
+#                 write_log(user.id, log_text)
+#                 await message.answer('Вы авторизовались!', reply_markup=start_kb)
+#                 name = user_dict['fio'].split()
+#                 if name and len(name) == 3:
+#                     name = name[1]
+#                 else:
+#                     name = user_dict['fio']
+#                 text = Lexicon.get('/start').format(name)
+#                 await message.answer(text, reply_markup=start_kb)
+#
+#                 # Отправка показателей
+#                 user_to_send = get_or_create_user(message.from_user)
+#                 await send_report_to_users([user_to_send], bot)
+#
+#                 await state.clear()
+#                 return
+#         await message.answer('Ваш телефон не найден в базе, введите код риэлтора')
+#         await state.set_state(FSMCheckUser.input_rieltor_code)
+#     else:
+#         await message.answer('Нажмите "Поделиться телефоном" для авторизации')
 
 
 # Проверка rieltor_code, заполнение User
 @router.message(StateFilter(FSMCheckUser.input_rieltor_code))
 async def check_rieltor_code(message: Message, state: FSMContext, bot: Bot):
-    input_rieltor_code = message.text.strip()
-    users_from_table = read_user_from_table()
-    if input_rieltor_code in users_from_table:
-        if not users_from_table[input_rieltor_code].get('is_delete'):
-            g_user: dict = users_from_table[input_rieltor_code]
-            fio = g_user.get("fio")
-            logger.debug(f'fio: {fio}')
-            name = fio.split()
-            logger.debug(f'name: {name}')
-            if name and len(name) == 3:
-                name = name[1]
+    try:
+        input_rieltor_code = message.text.strip()
+        users_from_table = read_user_from_table()
+        if input_rieltor_code in users_from_table:
+            if not users_from_table[input_rieltor_code].get('is_delete'):
+                g_user: dict = users_from_table[input_rieltor_code]
+                fio = g_user.get("fio")
+                logger.debug(f'fio: {fio}')
+                name = fio.split()
+                logger.debug(f'name: {name}')
+                if name and len(name) == 3:
+                    name = name[1]
+                else:
+                    name = fio
+
+                text = Lexicon.get('/start').format(name)
+                await message.answer(text, reply_markup=start_kb)
+                await state.clear()
+                update_user(message.from_user.id, input_rieltor_code, g_user)
+                log_text = f'{message.from_user.username or message.from_user.id} подтвердил rieltor_code {input_rieltor_code}'
+                # data = await state.get_data()
+                # user = data['user']
+                user: User = get_or_create_user(message.from_user)
+                await add_log_to_gtable(user, log_text)
+                write_log(user.id, log_text)
+
+                # ОТправка статистики
+                user_to_send = get_or_create_user(message.from_user)
+                await send_report_to_users([user_to_send], bot)
             else:
-                name = fio
-
-            text = Lexicon.get('/start').format(name)
-            await message.answer(text, reply_markup=start_kb)
-            update_user(message.from_user.id, input_rieltor_code, g_user)
-            log_text = f'{message.from_user.username or message.from_user.id} подтвердил rieltor_code {input_rieltor_code}'
-            data = await state.get_data()
-            user = data['user']
-            await add_log_to_gtable(user, log_text)
-            write_log(user.id, log_text)
-
-            # ОТправка статистики
-            user_to_send = get_or_create_user(message.from_user)
-            await send_report_to_users([user_to_send], bot)
-            await state.clear()
+                await message.answer('Вы удалены из базы')
+                await state.clear()
         else:
-            await message.answer('Вы удалены из базы')
-            await state.clear()
-    else:
-        await message.answer('Такого кода нет, попробуйте снова!')
+            await message.answer('Мы не нашли ваш код 😔 Обратитесь к администратору https://t.me/lilia_dddd  и мы вам поможем🤝')
+    except Exception as err:
+        logger.error(err, exc_info=True)
+        await message.answer('При поиске кода произошла ошибка. Попробуйте снова написать /start или обратиться к администратору https://t.me/lilia_dddd')
         await state.clear()
 
 

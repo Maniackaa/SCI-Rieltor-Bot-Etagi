@@ -48,3 +48,4 @@ services:
       - db_postgres_etagi
     volumes:
       - ./logs:/app/logs
+      - ./alembic:/app/alembic

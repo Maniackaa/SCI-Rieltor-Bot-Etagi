@@ -9,7 +9,8 @@ from aiogram.types import CallbackQuery, Message
 from config_data.config import config
 from database.db import History
 from keyboards.keyboards import yes_no_kb
-from services.db_func import get_users_to_send_message, get_user_from_rieltor_code, get_user_from_rieltor_codes
+from services.db_func import get_users_to_send_message, get_user_from_rieltor_codes, \
+    get_un_users
 from services.func import get_history
 
 
@@ -41,6 +42,8 @@ router.message.filter(IsAdmin())
 class FSMAdmin(StatesGroup):
     send_message = State()
     send_message_from_table = State()
+    send_to_un_list = State()
+    send_to_un_text = State()
 
 
 @router.message(Command(commands=["history"]))
@@ -135,3 +138,42 @@ async def csi_answer(callback: CallbackQuery, bot: Bot, state: FSMContext):
     await state.clear()
 
 
+# Отправка по списку
+@router.message(Command(commands=["send_to_un"]))
+async def send_to_worker(message: Message, state: FSMContext, bot: Bot):
+    users_to_send = get_un_users()
+    if users_to_send:
+        await state.update_data(users_to_send=users_to_send)
+        await message.answer(f'В базе найдено {len(users_to_send)} неавторизованных пользователей')
+        await message.answer(f'Введите текст сообщения')
+        await state.set_state(FSMAdmin.send_to_un_text)
+    else:
+        await state.clear()
+        await message.answer('Не найдено пользователей в базе')
+
+
+@router.message(StateFilter(FSMAdmin.send_to_un_text))
+async def send_to_un_text(message: Message, state: FSMContext, bot: Bot):
+    text = message.text
+    await state.update_data(text=message.text)
+    await message.answer(f'Отправить сообщение?:\n<b>{text}</b>\n', reply_markup=yes_no_kb(2))
+
+
+@router.callback_query(StateFilter(FSMAdmin.send_to_un_text))
+async def send_to_worker_confirm(callback: CallbackQuery, bot: Bot, state: FSMContext):
+    await callback.message.delete()
+    if callback.data == 'yes':
+        data = await state.get_data()
+        text = data['text']
+        users = data['users_to_send']
+        count = 0
+        for user in users:
+            try:
+                await bot.send_message(user.tg_id, text)
+                count += 1
+                logger.info(f'Сообщение пользователю {user.fio or user.tg_id} отправлено')
+                await asyncio.sleep(0.1)
+            except Exception as err:
+                err_log.error(f'ошибка отправки сообщения пользователю {user.tg_id} {err}', exc_info=False)
+        await callback.message.answer(f'Сообщение разослано {count} пользователям')
+    await state.clear()

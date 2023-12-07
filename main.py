@@ -12,7 +12,7 @@ import logging.config
 from handlers.csi_handlers import send_csi_to_users
 from lexicon.lexicon import LEXICON
 from services.CSI import find_users_to_send, find_users_to_send_report
-from services.db_func import clear_rieltor_code, get_user_from_rieltor_code
+from services.db_func import clear_rieltor_code, get_user_from_rieltor_code, delete_user_from_codes
 from services.func import send_report_to_users
 from services.google_func import get_codes_to_delete, load_range_values
 
@@ -39,7 +39,7 @@ async def delete_user(bot):
     logger.info('Удаляем польззователей')
     codes_to_del = await get_codes_to_delete()
     logger.debug(f'Найдено пользователей: {codes_to_del}')
-    del_count = clear_rieltor_code(codes_to_del)
+    del_count = delete_user_from_codes(codes_to_del)
     logger.info(f'Удалено: {del_count}')
 
 
@@ -145,6 +145,7 @@ async def shedulers(bot):
     # aioschedule.every().minute.do(sell, bot)
     # aioschedule.every().minute.do(ipoteka, bot)
     aioschedule.every().day.at('5:00').do(delete_user, bot)
+    # aioschedule.every().minute.do(delete_user, bot)
     # aioschedule.every().minute.do(send_report, bot)
     while True:
         await aioschedule.run_pending()

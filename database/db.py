@@ -8,14 +8,18 @@ from sqlalchemy.orm import DeclarativeBase, relationship
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import sessionmaker
-
+from sqlalchemy_utils.functions import database_exists, create_database
 
 
 from config_data.config import config
 
-engine = create_engine(f"postgresql+psycopg2://{config.db.db_user}:{config.db.db_password}@{config.db.db_host}:{config.db.db_port}/{config.db.database}", echo=False)
+# engine = create_engine(f"postgresql+psycopg2://{config.db.db_user}:{config.db.db_password}@{config.db.db_host}:{config.db.db_port}/{config.db.database}", echo=False)
 # engine = create_engine(f"postgresql+psycopg2://{config.db.db_user}:{config.db.db_password}@localhost:{config.db.db_port}/{config.db.database}", echo=False)
-print(f"postgresql+psycopg2://{config.db.db_user}:{config.db.db_password}@{config.db.db_host}:{config.db.db_port}/{config.db.database}")
+# print(f"postgresql+psycopg2://{config.db.db_user}:{config.db.db_password}@{config.db.db_host}:{config.db.db_port}/{config.db.database}")
+# Session = sessionmaker(bind=engine)
+# db_url = f"postgresql+psycopg2://{config.db.db_user}:{config.db.db_password}@localhost:{config.db.db_port}/{config.db.database}"
+db_url = f"postgresql+psycopg2://{config.db.db_user}:{config.db.db_password}@{config.db.db_host}:{config.db.db_port}/{config.db.database}"
+engine = create_engine(db_url, echo=False)
 Session = sessionmaker(bind=engine)
 
 
@@ -83,6 +87,12 @@ class User(Base):
     day8_comment: Mapped[str] = mapped_column(String(2000), nullable=True)
     day9_comment: Mapped[str] = mapped_column(String(2000), nullable=True)
     day10_comment: Mapped[str] = mapped_column(String(2000), nullable=True)
+    history = relationship(
+        "History",
+        back_populates="user",
+        cascade="all, delete",
+        passive_deletes=True,
+    )
 
     def __repr__(self):
         return f'{self.id}. {self.tg_id} {self.username or "-"}'
@@ -132,6 +142,7 @@ class History(Base):
                                     comment='Первичный ключ')
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete='CASCADE'))
+    user = relationship("User", back_populates="history")
     time: Mapped[datetime.datetime] = mapped_column(DateTime())
     text: Mapped[str] = mapped_column(String(250), nullable=True)
 
@@ -170,6 +181,9 @@ class Lexicon(Base):
         except Exception as err:
             raise err
 
+
+if not database_exists(db_url):
+    create_database(db_url)
 Base.metadata.create_all(engine)
 
 

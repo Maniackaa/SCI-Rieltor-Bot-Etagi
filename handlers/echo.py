@@ -31,7 +31,7 @@ GROUP_TYPE = config.tg_bot.GROUP_TYPE
 
 
 # Копия сообщения из бота в группу
-@router.message(F.chat.type == 'private', F.text, IsAuthorized())
+@router.message(F.chat.type == 'private', F.text)
 async def send_message_to_group(message: Message, bot: Bot):
     print('send_message_to_group')
     print(message)
@@ -136,7 +136,7 @@ class SupportedMediaFilter(BaseFilter):
         )
 
 
-@router.message(SupportedMediaFilter(), F.chat.type == 'private', IsAuthorized())
+@router.message(SupportedMediaFilter(), F.chat.type == 'private')
 async def supported_media(message: Message):
     print('supported_media')
     if message.caption and len(message.caption) > 1000:

@@ -2,7 +2,7 @@ import asyncio
 import datetime
 import logging
 
-from sqlalchemy import func, update
+from sqlalchemy import func, update, delete, select
 
 from database.db import User, Session, Lexicon
 
@@ -113,6 +113,14 @@ def get_users_to_send_message() -> list[User]:
     return user_db
 
 
+def get_un_users() -> list[User]:
+    """Достает Неавторизованных пользователей"""
+    session = Session()
+    with session:
+        user_db = session.query(User).filter(User.rieltor_code.is_(None)).all()
+    return user_db
+
+
 async def report():
     """
     Выгрузка отчета с User в виде строк.
@@ -158,6 +166,7 @@ def get_user_from_rieltor_codes(rieltor_codes: list | set) -> list[User]:
     try:
         logger.debug(f'Ищем rieltor_code  {rieltor_codes}')
         rieltor_codes = [str(val) for val in rieltor_codes]
+        logger.debug(rieltor_codes)
         with Session() as session:
             users = session.query(User).filter(User.rieltor_code.in_(rieltor_codes)).all()
             logger.debug(f'Найдено: {users}')
@@ -191,8 +200,35 @@ def clear_rieltor_code(rieltor_codes: list | set):
         logger.error(err)
 
 
+def delete_user_from_codes(rieltor_codes: list | set):
+    """Удаляет пользователей из базы"""
+    try:
+        session = Session()
+        commands = {'rieltor_code': None, 'fio': None}
+        for i in range(1, 7):
+            commands[f'date{i}'] = None
+        for i in range(1, 11):
+            commands[f'day{i}'] = None
+        with session:
+            # users = session.query(User).filter(User.rieltor_code.in_(rieltor_codes)).all()
+            # result = session.query(User).where(User.rieltor_code.in_(rieltor_codes)).update(commands)
+            # result = session.query(User).where(User.rieltor_code.in_(rieltor_codes)).delete()
+            users = select(User).where(User.rieltor_code.in_(rieltor_codes))
+
+            res = session.execute(users).scalars().all()
+            logger.debug(f'Удаляем пользователей: {res}')
+            stmt = delete(User).where(User.rieltor_code.in_(rieltor_codes))
+            session.execute(stmt)
+            session.commit()
+            return len(res)
+    except Exception as err:
+        logger.error(err)
+
+
 if __name__ == '__main__':
     # asyncio.run(report())
     # clear_rieltor_code(['1241424124124124124124'])
+    # x = delete_user_from_codes(['55022', '1231215807', '1231217761', '1231221311'])
+    # print(x)
     pass
 
