@@ -12,7 +12,7 @@ archive/
 *.so
 myenv*.env
 .idea/
-
+alembic/versions
 # Distribution / packaging
 .Python
 build/
