@@ -211,8 +211,17 @@ async def get_codes_to_delete() -> set[str]:
             codes_to_delete.add(user[0])
     return codes_to_delete
 
+
+async def main():
+    x = await read_stats_from_table()
+    # print(x)
+    for key, val in x.items():
+        # print(key, type(key))
+        if key == '1245785663':
+            print(val)
+
 if __name__ == '__main__':
-    pass
+    asyncio.run(main())
 
 
     # for u in y.items():

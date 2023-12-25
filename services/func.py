@@ -199,9 +199,11 @@ async def send_report_to_users(users_to_send: list[User], bot: Bot):
                 logger.debug(f'Стата пользователя {user} найдена')
                 text = format_user_sats(user_stats[user.rieltor_code],
                                         user_stats['date'])
-                await bot.send_message(user.tg_id, text)
-                await asyncio.sleep(0.2)
-                logger.info(f'Сообщение пользователю {user.fio or user.tg_id} отправлено')
-        except Exception:
-            await bot.send_message(config.tg_bot.admin_ids[0], 'Сообщение пользователю {user.fio or user.tg_id} НЕ отправлено')
-            err_log.error(f'ошибка отправки сообщения пользователю {user.tg_id}', exc_info=False)
+                if text != '*показатели обновляются раз в неделю по понедельникам':
+                    await bot.send_message(user.tg_id, text)
+                    await asyncio.sleep(0.1)
+                    logger.info(f'Сообщение пользователю {user.fio or user.tg_id} отправлено')
+        except Exception as err:
+            # await bot.send_message(config.tg_bot.admin_ids[0], 'Сообщение пользователю {user.fio or user.tg_id} НЕ отправлено')
+            logger.error(f'ошибка отправки сообщения пользователю {user.tg_id}: {err}', exc_info=False)
+            err_log.error(f'ошибка отправки сообщения пользователю {user.tg_id}: {err}', exc_info=False)

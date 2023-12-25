@@ -13,7 +13,7 @@ from keyboards.keyboards import start_menu_kb, start_kb, contact_kb, \
 
 from services.func import get_or_create_user, update_user, get_menu_from_index, \
     write_log, get_history, format_user_sats, send_message_to_manager, \
-    get_index_menu_from_text, send_report_to_users
+    get_index_menu_from_text, send_report_to_users, check_user
 from services.google_func import read_user_from_table, read_stats_from_table, \
     add_log_to_gtable
 
@@ -34,6 +34,20 @@ class FSMCheckUser(StatesGroup):
     input_rieltor_code = State()
 
 
+class IsAuthorized(BaseFilter):
+    def __init__(self) -> None:
+        pass
+
+    async def __call__(self, message: Message, event_from_user, bot: Bot, *args, **kwargs) -> bool:
+        if isinstance(message, CallbackQuery):
+            message = message.message
+        user = check_user(event_from_user.id)
+        print(f'Авторизован: {user and user.rieltor_code}')
+        if user and user.rieltor_code:
+            return True
+        return False
+
+
 @router.message(Command(commands=["start"]))
 async def process_start_command(message: Message, state: FSMContext):
     await state.clear()
@@ -50,7 +64,7 @@ async def process_start_command(message: Message, state: FSMContext):
         await message.answer(text, reply_markup=start_kb)
         await message.answer(Lexicon.get('menu_text'),
                              reply_markup=start_menu_kb2(1, '0'))
-    log_text = f'{user.username or user.tg_id} нажал /start'
+    log_text = f'{user.username or user.tg_id} {user.rieltor_code} нажал /start'
     await add_log_to_gtable(user, log_text)
     write_log(user.id, log_text)
 
@@ -133,6 +147,7 @@ async def check_rieltor_code(message: Message, state: FSMContext, bot: Bot):
                 await state.clear()
         else:
             await message.answer('Мы не нашли ваш код 😔 Обратитесь к администратору https://t.me/lilia_dddd  и мы вам поможем🤝')
+            await state.clear()
     except Exception as err:
         logger.error(err, exc_info=True)
         await message.answer('При поиске кода произошла ошибка. Попробуйте снова написать /start или обратиться к администратору https://t.me/lilia_dddd')
@@ -180,6 +195,7 @@ class IsMenu(BaseFilter):
 # Обработка нажатий меню пользователя
 @router.message(IsMenu())
 async def send_menu(message: Message, bot: Bot):
+    logger.debug('send_menu')
     if message.text == 'Мои показатели':
         user = get_or_create_user(message.from_user)
         logger.debug(f'Пользователь: {user}, emai: {user.rieltor_code}')
@@ -201,7 +217,7 @@ async def send_menu(message: Message, bot: Bot):
         else:
             menu: Menu = get_menu_from_index(index)
         user = get_or_create_user(message.from_user)
-        log_text = f'{user.fio or user.username}: {menu.index}. {menu.text}'
+        log_text = f'{user.fio or user.username} {user.rieltor_code}: {menu.index}. {menu.text}'
         if menu.is_with_children:
             await message.answer(menu.text, reply_markup=start_menu_kb2(1, index))
         else:

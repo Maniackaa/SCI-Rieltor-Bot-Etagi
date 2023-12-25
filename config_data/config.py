@@ -23,8 +23,8 @@ LOGGING_CONFIG = {
         'rotating_file_handler': {
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': f'{BASE_DIR / "logs" / "bot"}.log',
-            'backupCount': 2,
-            'maxBytes': 10 * 1024 * 1024,
+            'backupCount': 10,
+            'maxBytes': 20 * 1024 * 1024,
             'mode': 'a',
             'encoding': 'UTF-8',
             'formatter': 'default_formatter',
@@ -32,7 +32,7 @@ LOGGING_CONFIG = {
         'errors_file_handler': {
             'class': 'logging.handlers.RotatingFileHandler',
             'filename': f'{BASE_DIR / "logs" / "errors_bot"}.log',
-            'backupCount': 2,
+            'backupCount': 10,
             'maxBytes': 10 * 1024 * 1024,
             'mode': 'a',
             'encoding': 'UTF-8',

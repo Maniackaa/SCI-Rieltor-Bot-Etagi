@@ -64,3 +64,5 @@ def find_users_to_send_report() -> list[User]:
     logger.info(f'Пользователи для рассылки репорта: {users_to_send}')
     return users_to_send
 
+# x = find_users_to_send()
+# print(x)

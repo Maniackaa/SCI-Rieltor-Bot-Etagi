@@ -24,14 +24,14 @@ err_log = logging.getLogger('errors_logger')
 async def csi_week_job(bot):
     # Запрос анкетирования CSI
     tasks = find_users_to_send()
-    logger.debug(f'Сегодня найдены пользовтаели для рассылки CSI:\n{tasks}')
+    logger.debug(f'Сегодня найдены пользовтаели для рассылки CSI date:\n{tasks}')
     await send_csi_to_users(bot, tasks, 'date')
 
 
 async def csi_day_job(bot):
     # Запрос анкетирования CSI
     users_to_send = find_users_to_send()
-    logger.debug(f'Сегодня найдены пользовтаели для рассылки CSI:\n{users_to_send}')
+    logger.debug(f'Сегодня найдены пользовтаели для рассылки CSI day:\n{users_to_send}')
     await send_csi_to_users(bot, users_to_send, 'day')
 
 
@@ -44,10 +44,16 @@ async def delete_user(bot):
 
 
 async def send_report(bot):
-    # Рассылка статистики каждый вторник
-    users_to_send_report = find_users_to_send_report()
-    logger.debug(f'Сегодня найдены пользовтаели для рассылки CSI:\n{users_to_send_report}')
-    await send_report_to_users(users_to_send_report, bot)
+    try:
+        # Рассылка статистики по понедельникам
+        logger.info('Рассылка статистики по понедельникам')
+        users_to_send_report = find_users_to_send_report()
+        logger.debug(f'Сегодня найдены пользовтаели для рассылки статистики:\n{users_to_send_report}')
+        await send_report_to_users(users_to_send_report, bot)
+        logger.debug('send_report выполнена')
+    except Exception as err:
+        logger.error(f'Рассылка статистики по понедельникам неудачна:', err)
+        err_log.error(f'Рассылка статистики по понедельникам неудачна:', err, exc_info=True)
 
 
 async def get_bad_values():
@@ -141,12 +147,8 @@ async def shedulers(bot):
     aioschedule.every().tuesday.at('11:00').do(buy, bot)
     aioschedule.every().wednesday.at('11:00').do(sell, bot)
     aioschedule.every().thursday.at('11:00').do(ipoteka, bot)
-    # aioschedule.every().minute.do(buy, bot)
-    # aioschedule.every().minute.do(sell, bot)
-    # aioschedule.every().minute.do(ipoteka, bot)
     aioschedule.every().day.at('5:00').do(delete_user, bot)
-    # aioschedule.every().minute.do(delete_user, bot)
-    # aioschedule.every().minute.do(send_report, bot)
+
     while True:
         await aioschedule.run_pending()
         await asyncio.sleep(1)
@@ -163,6 +165,7 @@ async def main():
     dp.include_router(csi_handlers.router)
     dp.include_router(echo.router)
     asyncio.create_task(shedulers(bot))
+    # await send_report(bot)
     await bot.delete_webhook(drop_pending_updates=True)
     try:
         await bot.send_message(

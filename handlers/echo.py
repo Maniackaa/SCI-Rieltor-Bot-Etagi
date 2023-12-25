@@ -48,7 +48,7 @@ async def send_message_to_group(message: Message, bot: Bot):
         ),
         parse_mode='HTML'
     )
-    log_text = f'{message.from_user.username or message.from_user.id} написал в чат: {message.text}'
+    log_text = f'{message.from_user.username or message.from_user.id} {user.rieltor_code} написал в чат: {message.text}'
     write_log(user.id, log_text)
     await add_log_to_gtable(user, log_text)
 
@@ -117,7 +117,7 @@ async def send_message_answer(message: Message, bot: Bot):
                                     f'<code>Ваш вопрос:\n{reply_text}</code>'
                                )
         user = check_user(chat_id)
-        log_text = f'{message.text}'
+        log_text = f'{message.text}  {user.rieltor_code}'
         write_log(user.id, log_text)
         await add_log_to_gtable(user, log_text)
 
